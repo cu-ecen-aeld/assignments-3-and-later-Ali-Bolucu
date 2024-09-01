@@ -1,0 +1,5 @@
+# make CROSS_COMPILE
+writer: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, for GNU/Linux 3.7.0, with debug_info, not stripped
+
+#make
+writer: ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=97618b1e1b7dbcf0cf2446b268fb1c38fd04b3ca, for GNU/Linux 3.2.0, not stripped
