@@ -1,4 +1,17 @@
 #include "systemcalls.h"
+#include <stdlib.h>
+
+// Fork
+#include <unistd.h> 
+// Waitpid
+#include <sys/types.h>
+#include <sys/wait.h>
+
+// File IO
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
 
 /**
  * @param cmd the command to execute with system()
@@ -9,13 +22,13 @@
 */
 bool do_system(const char *cmd)
 {
+    printf("[do_system] Starting... \n");
 
-/*
- * TODO  add your code here
- *  Call the system() function with the command set in the cmd
- *   and return a boolean true if the system() call completed with success
- *   or false() if it returned a failure
-*/
+    int ret = system(cmd);
+    if ((ret != 0)) {
+        
+        return false;
+    }
 
     return true;
 }
@@ -33,7 +46,6 @@ bool do_system(const char *cmd)
 *   fork, waitpid, or execv() command, or if a non-zero return value was returned
 *   by the command issued in @param arguments with the specified arguments.
 */
-
 bool do_exec(int count, ...)
 {
     va_list args;
@@ -49,6 +61,8 @@ bool do_exec(int count, ...)
     // and may be removed
     command[count] = command[count];
 
+    va_end(args);
+
 /*
  * TODO:
  *   Execute a system command by calling fork, execv(),
@@ -59,7 +73,45 @@ bool do_exec(int count, ...)
  *
 */
 
-    va_end(args);
+    printf("[do_exec] Starting... \n");
+    fflush(stdout);
+
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("fork failed");
+        return false;
+    }
+
+    if (pid == 0) { // this block is for CHILD process
+        int ret = execv(command[0], command);
+        if (ret == -1) {
+            perror("execv");
+            exit(EXIT_FAILURE);
+        }
+    } 
+    else { // this block is for PARENT process
+        int status;
+        if (waitpid(pid, &status, 0) == -1) {
+            perror("waitpid");
+            return false;
+        }
+        else if (WIFEXITED(status)) {
+            printf("WEXITSTATUS = %d \n", WEXITSTATUS(status));
+                int exit_status = WEXITSTATUS(status);
+                if (exit_status == 0) {
+                    printf("Command executed successfully.\n");
+                } else if (exit_status == 1) {
+                    printf("Command failed with a general error.\n");
+                    return false;
+                } else {
+                    printf("Command exited with status: %d\n", exit_status);
+                }
+        }
+        else {
+            printf("Child did not exit normally\n");
+            return false;
+        }
+    }
 
     return true;
 }
@@ -84,7 +136,6 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     // and may be removed
     command[count] = command[count];
 
-
 /*
  * TODO
  *   Call execv, but first using https://stackoverflow.com/a/13784315/1446624 as a refernce,
@@ -92,8 +143,49 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *   The rest of the behaviour is same as do_exec()
  *
 */
+    printf("[do_exec_redirect] Starting... \n");
+    fflush(stdout);
 
-    va_end(args);
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("fork failed");
+        return false;
+    }
 
+    if (pid == 0) { // this block is for CHILD process
+        int fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+        dup2(fd, 1);
+
+        int ret = execv(command[0], command);
+        if (ret == -1) {
+            perror("execv");
+            close(fd);
+            exit(EXIT_FAILURE);
+        }
+        close(fd);
+    }
+    else { // this block is for PARENT process
+        int status;
+        if (waitpid(pid, &status, 0) == -1) {
+            return false;
+        }
+        else if (WIFEXITED(status)) { // Bu komut her zaman succesful
+            printf("WEXITSTATUS = %d \n", WEXITSTATUS(status));
+                int exit_status = WEXITSTATUS(status);
+                if (exit_status == 0) {
+                    printf("Command executed successfully.\n");
+                } else if (exit_status == 1) {
+                    printf("Command failed with a general error.\n");
+                    return false;
+                } else {
+                    printf("Command exited with status: %d\n", exit_status);
+                }
+        }
+        else {
+            printf("Child did not exit normally\n");
+            return false;
+        }
+    }
+    
     return true;
 }
