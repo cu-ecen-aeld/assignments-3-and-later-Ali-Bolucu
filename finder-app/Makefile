@@ -10,3 +10,4 @@ CROSS_COMPILE: writer.c
 
 clean:
 	@echo  "clean up..."
+	rm -f writer
